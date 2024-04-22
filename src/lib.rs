@@ -1,7 +1,4 @@
-use actix_web::{
-    web, App, HttpRequest, HttpResponse, HttpServer, Responder,
-    dev::Server,
-};
+use actix_web::{dev::Server, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use std::net::TcpListener;
 
 async fn greet(req: HttpRequest) -> impl Responder {
