@@ -48,7 +48,6 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
         ("mail=ursula_le_guin%40gmail.com", "missing the name"),
         ("", "missing both name and email")
     ];
-    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
     for (invalid_body, error_message) in test_cases {
         let response = client
             .post(&format!("{}/subscriptions", &app_addr))
