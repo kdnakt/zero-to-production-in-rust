@@ -4,14 +4,36 @@ on: [push, pull_request]
 
 env:
   CARGO_TERM_COLOR: always
+  SQLX_VERSION: 0.7.1
+  SQLX_FEATURES: "rustls,postgres"
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: sqlx-${{ env.SQLX_VERSION }}
+      - run:
+          cargo install sqlx-cli
+          --version=${{ env.SQLX_VERSION }}
+          --features=${{ env.SQLX_FEATURES }}
+          --no-default-features
+          --locked
+      - run: sudo apt-get update && sudo apt-get install postgresql-client -y
+      - run: SKIP_DOCKER=true ./scripts/init_db.sh
       - run: cargo test --all-features
 
   fmt:
@@ -25,16 +47,56 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: sqlx-${{ env.SQLX_VERSION }}
+      - run:
+          cargo install sqlx-cli
+          --version=${{ env.SQLX_VERSION }}
+          --features=${{ env.SQLX_FEATURES }}
+          --no-default-features
+          --locked
+      - run: sudo apt-get update && sudo apt-get install postgresql-client -y
+      - run: SKIP_DOCKER=true ./scripts/init_db.sh
       - run: cargo clippy -- -D warnings
 
   coverage:
     name: Code coverage
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: sqlx-${{ env.SQLX_VERSION }}
+      - run:
+          cargo install sqlx-cli
+          --version=${{ env.SQLX_VERSION }}
+          --features=${{ env.SQLX_FEATURES }}
+          --no-default-features
+          --locked
+      - run: sudo apt-get update && sudo apt-get install postgresql-client -y
+      - run: SKIP_DOCKER=true ./scripts/init_db.sh
       - run: cargo install cargo-tarpaulin
       - run: cargo tarpaulin --ignore-tests
