@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse};
-use sqlx::PgConnection;
 use chrono::Utc;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 #[allow(dead_code)]
@@ -10,10 +10,7 @@ pub struct FormData {
     name: String,
 }
 
-pub async fn subscribe(
-    form: web::Form<FormData>,
-    connection: web::Data<PgConnection>,
-) -> HttpResponse {
+pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> HttpResponse {
     sqlx::query!(
         r#"
         INSERT INTO subscriptions (id, email, name, subscribed_at)
@@ -24,7 +21,7 @@ pub async fn subscribe(
         form.name,
         Utc::now()
     )
-    .execute(connection.get_ref())
+    .execute(pool.get_ref())
     .await;
     HttpResponse::Ok().finish()
 }
