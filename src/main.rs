@@ -3,11 +3,14 @@ use std::net::TcpListener;
 use sqlx::PgPool;
 use tracing::dispatcher::set_global_default;
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
+use tracing_log::LogTracer;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 use zero2prod::{configuration::get_configuration, startup::run};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    LogTracer::init().expect("Failed to set logger");
+
     let env_filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("info"));
     let formatting_layer = BunyanFormattingLayer::new(
