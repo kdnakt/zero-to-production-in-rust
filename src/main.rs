@@ -11,12 +11,8 @@ use zero2prod::{configuration::get_configuration, startup::run};
 async fn main() -> std::io::Result<()> {
     LogTracer::init().expect("Failed to set logger");
 
-    let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info"));
-    let formatting_layer = BunyanFormattingLayer::new(
-        "zero2prod".into(),
-        std::io::stdout
-    );
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let formatting_layer = BunyanFormattingLayer::new("zero2prod".into(), std::io::stdout);
     let subscriber = Registry::default()
         .with(env_filter)
         .with(JsonStorageLayer)
