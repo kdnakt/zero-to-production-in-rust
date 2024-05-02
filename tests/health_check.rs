@@ -1,8 +1,9 @@
 use std::net::TcpListener;
 
+use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
-use zero2prod::configuration::{get_configuration, DatabaseSettings};
+use zero2prod::{configuration::{get_configuration, DatabaseSettings}, telemetry::{get_subscriber, init_subscriber}};
 
 #[tokio::test]
 async fn health_check_works() {
@@ -18,12 +19,19 @@ async fn health_check_works() {
     assert_eq!(Some(0), response.content_length());
 }
 
+static TRACING: Lazy<()> = Lazy::new(|| {
+    let subscriber = get_subscriber("test".into(), "debug".into());
+    init_subscriber(subscriber);
+});
+
 struct TestApp {
     address: String,
     db_pool: PgPool,
 }
 
 async fn spawn_app() -> TestApp {
+    Lazy::force(&TRACING);
+
     let mut configuration = get_configuration().expect("Failed to read configuration.");
     configuration.database.database_name = Uuid::new_v4().to_string();
     let db_pool = configure_database(&configuration.database).await;
