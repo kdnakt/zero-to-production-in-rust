@@ -1,4 +1,4 @@
-FROM rust:1.78.0
+FROM rust:1.78.0 AS builder
 
 WORKDIR /app
 
@@ -10,6 +10,15 @@ ENV SQLX_OFFLINE true
 
 RUN cargo build --release
 
+
+FROM rust:1.78.0 AS runtime
+
+WORKDIR /app
+
+COPY --from=builder /app/target/release/zero2prod zero2prod
+
+COPY configuration configuration
+
 ENV APP_ENVIRONMENT production
 
-ENTRYPOINT ["./target/release/zero2prod"]
+ENTRYPOINT ["./zero2prod"]
