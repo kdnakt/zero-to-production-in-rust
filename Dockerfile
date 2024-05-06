@@ -1,4 +1,4 @@
-FROM lukemathwalker/cargo-chef:latest-rust-1.78.0 as chef
+FROM lukemathwalker/cargo-chef:latest-rust-1.78.0-slim-bullseye as chef
 WORKDIR /app
 RUN apt update && apt install lld clang -y
 
@@ -8,6 +8,8 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef as builder
 COPY --from=planner /app/recipe.json recipe.json
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends pkg-config openssl libssl-dev
 RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 ENV SQLX_OFFLINE true
