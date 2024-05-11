@@ -5,6 +5,7 @@ pub struct NewSubscriber {
     pub name: SubscriberName,
 }
 
+#[derive(Debug)]
 pub struct SubscriberName(String);
 
 impl SubscriberName {
@@ -31,11 +32,17 @@ impl AsRef<str> for SubscriberName {
 #[cfg(test)]
 mod tests {
     use crate::domain::SubscriberName;
-    use claim::assert_ok;
+    use claim::{assert_err, assert_ok};
 
     #[test]
     fn a_256_grapheme_long_name_is_valid() {
         let name = "ё".repeat(256);
         assert_ok!(SubscriberName::parse(name));
+    }
+
+    #[test]
+    fn a_name_longer_than_256_graphemes_is_rejected() {
+        let name = "ё".repeat(257);
+        assert_err!(SubscriberName::parse(name));
     }
 }
