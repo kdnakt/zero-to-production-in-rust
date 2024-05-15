@@ -1,4 +1,3 @@
-
 #[derive(Debug)]
 pub struct SubscriberEmail(String);
 
