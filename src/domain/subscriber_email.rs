@@ -22,7 +22,13 @@ impl AsRef<str> for SubscriberEmail {
 #[cfg(test)]
 mod tests {
     use super::SubscriberEmail;
-    use claim::assert_err;
+    use claim::{assert_err, assert_ok};
+
+    #[test]
+    fn valid_email() {
+        let email = "ursula@domain.com".to_string();
+        assert_ok!(SubscriberEmail::parse(email));
+    }
 
     #[test]
     fn empty_string_is_rejected() {
