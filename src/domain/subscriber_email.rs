@@ -24,6 +24,8 @@ mod tests {
     use super::SubscriberEmail;
     use claim::{assert_err, assert_ok};
     use fake::{faker::internet::en::SafeEmail, Fake};
+    use quickcheck::Arbitrary;
+    use rand::{rngs::StdRng, SeedableRng};
 
     #[test]
     fn valid_email() {
@@ -31,10 +33,25 @@ mod tests {
         assert_ok!(SubscriberEmail::parse(email));
     }
 
-    #[test]
-    fn valid_emails_are_parsed_successfully() {
-        let email = SafeEmail().fake();
-        assert_ok!(SubscriberEmail::parse(email));
+    #[derive(Debug, Clone)]
+    struct ValidEmailFixture(pub String);
+
+    impl Arbitrary for ValidEmailFixture {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            // https://github.com/LukeMathWalker/zero-to-production/issues/34#issuecomment-1107633175
+            let mut rand_slice: [u8; 32] = [0; 32];
+            for i in 0..32 {
+                rand_slice[i] = u8::arbitrary(g);
+            }
+            let mut seed = StdRng::from_seed(rand_slice);
+            let email = SafeEmail().fake_with_rng(&mut seed);
+            Self(email)
+        }
+    }
+
+    #[quickcheck_macros::quickcheck]
+    fn valid_emails_are_parsed_successfully(valid_email: ValidEmailFixture) -> bool {
+        SubscriberEmail::parse(valid_email.0).is_ok()
     }
 
     #[test]
