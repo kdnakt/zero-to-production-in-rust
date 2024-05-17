@@ -23,10 +23,17 @@ impl AsRef<str> for SubscriberEmail {
 mod tests {
     use super::SubscriberEmail;
     use claim::{assert_err, assert_ok};
+    use fake::{faker::internet::en::SafeEmail, Fake};
 
     #[test]
     fn valid_email() {
         let email = "ursula@domain.com".to_string();
+        assert_ok!(SubscriberEmail::parse(email));
+    }
+
+    #[test]
+    fn valid_emails_are_parsed_successfully() {
+        let email = SafeEmail().fake();
         assert_ok!(SubscriberEmail::parse(email));
     }
 
