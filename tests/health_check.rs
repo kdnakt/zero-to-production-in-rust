@@ -50,7 +50,11 @@ async fn spawn_app() -> TestApp {
         .email_client
         .sender()
         .expect("invalid sender email address");
-    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+    let email_client = EmailClient::new(
+        configuration.email_client.base_url,
+        sender_email,
+        configuration.email_client.authorization_token,
+    );
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port();
     let server = zero2prod::startup::run(listener, db_pool.clone(), email_client)
