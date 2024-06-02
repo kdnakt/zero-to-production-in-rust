@@ -79,13 +79,13 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let subsciber_email = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
+        let subscriber_email = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
         let subject: String = Sentence(1..2).fake();
         let content: String = Paragraph(1..10).fake();
 
         // Act
         let _ = email_client
-            .send_email(subsciber_email, &subject, &content, &content)
+            .send_email(subscriber_email, &subject, &content, &content)
             .await;
 
         // Assert
