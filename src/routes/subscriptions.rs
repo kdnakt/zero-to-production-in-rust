@@ -30,6 +30,30 @@ impl std::error::Error for SubscribeError {}
 
 impl ResponseError for SubscribeError {}
 
+impl From<reqwest::Error> for SubscribeError {
+    fn from(e: reqwest::Error) -> Self {
+        Self::SendEmailError(e)
+    }
+}
+
+impl From<sqlx::Error> for SubscribeError {
+    fn from(e: sqlx::Error) -> Self {
+        Self::DatabaseError(e)
+    }
+}
+
+impl From<StoreTokenError> for SubscribeError {
+    fn from(e: StoreTokenError) -> Self {
+        Self::StoreTokenError(e)
+    }
+}
+
+impl From<String> for SubscribeError {
+    fn from(e: String) -> Self {
+        Self::ValidationError(e)
+    }
+}
+
 #[allow(dead_code)]
 #[derive(serde::Deserialize)]
 pub struct FormData {
