@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
 
-use actix_web::{web, HttpResponse, ResponseError};
+use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use chrono::Utc;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use sqlx::{PgPool, Postgres, Transaction};
@@ -28,7 +28,14 @@ impl std::fmt::Display for SubscribeError {
 
 impl std::error::Error for SubscribeError {}
 
-impl ResponseError for SubscribeError {}
+impl ResponseError for SubscribeError {
+    fn status_code(&self) -> actix_web::http::StatusCode {
+        match self {
+            SubscribeError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
 
 impl From<reqwest::Error> for SubscribeError {
     fn from(e: reqwest::Error) -> Self {
