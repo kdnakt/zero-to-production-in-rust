@@ -14,7 +14,9 @@ use crate::{
 
 pub enum SubscribeError {
     ValidationError(String),
-    DatabaseError(sqlx::Error),
+    PoolError(sqlx::Error),
+    InsertSubscriberError(sqlx::Error),
+    TransactionCommitError(sqlx::Error),
     StoreTokenError(StoreTokenError),
     SendEmailError(reqwest::Error),
 }
@@ -23,7 +25,9 @@ impl std::fmt::Display for SubscribeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SubscribeError::ValidationError(e) => write!(f, "{}", e),
-            SubscribeError::DatabaseError(_) => write!(f, "???"),
+            SubscribeError::PoolError(_) => write!(f, "Failed to acquire a Postgres connection from the pool."),
+            SubscribeError::InsertSubscriberError(_) => write!(f, "Failed to insert new subscriber in the database."),
+            SubscribeError::TransactionCommitError(_) => write!(f, "Failed to commit SQL transaction to store a new subscriber."),
             SubscribeError::StoreTokenError(_) => write!(
                 f,
                 "Failed to store the confirmation token for a new subscriber."
@@ -45,7 +49,9 @@ impl std::error::Error for SubscribeError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             SubscribeError::ValidationError(_) => None,
-            SubscribeError::DatabaseError(e) => Some(e),
+            SubscribeError::PoolError(e) => Some(e),
+            SubscribeError::InsertSubscriberError(e) => Some(e),
+            SubscribeError::TransactionCommitError(e) => Some(e),
             SubscribeError::StoreTokenError(e) => Some(e),
             SubscribeError::SendEmailError(e) => Some(e),
         }
