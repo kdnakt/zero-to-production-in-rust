@@ -1,5 +1,8 @@
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
+use anyhow::Context;
 use sqlx::PgPool;
+
+use crate::{domain::SubscriberEmail, email_client::EmailClient};
 
 use super::error_chain_fmt;
 
@@ -16,7 +19,7 @@ pub struct Content {
 }
 
 struct ConfirmedSubscriber {
-    email: String,
+    email: SubscriberEmail,
 }
 
 #[derive(thiserror::Error)]
@@ -40,10 +43,22 @@ impl ResponseError for PublishError {
 }
 
 pub async fn publish_newsletter(
-    _body: web::Json<BodyData>,
+    body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
+    email_client: web::Data<EmailClient>,
 ) -> Result<HttpResponse, PublishError> {
-    let _subscribers = get_confirmed_subscribers(&pool).await?;
+    let subscribers = get_confirmed_subscribers(&pool).await?;
+    for subscriber in subscribers {
+        email_client
+            .send_email(
+                subscriber.email,
+                &body.title,
+                &body.content.html,
+                &body.content.text,
+            )
+            .await
+            .with_context(|| format!("Failed to send newsletter issue to {}", subscriber.email))?;
+    }
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -51,8 +66,12 @@ pub async fn publish_newsletter(
 async fn get_confirmed_subscribers(
     pool: &PgPool,
 ) -> Result<Vec<ConfirmedSubscriber>, anyhow::Error> {
+    struct Row {
+        email: String,
+    }
+
     let rows = sqlx::query_as!(
-        ConfirmedSubscriber,
+        Row,
         r#"
         SELECT email
         FROM subscriptions
@@ -61,5 +80,18 @@ async fn get_confirmed_subscribers(
     )
     .fetch_all(pool)
     .await?;
-    Ok(rows)
+    let confirmed_subscribers = rows
+        .into_iter()
+        .filter_map(|r| match SubscriberEmail::parse(r.email) {
+            Ok(email) => Some(ConfirmedSubscriber { email }),
+            Err(error) => {
+                tracing::warn!(
+                    "A confirmed subscriber is using an invalid email address.\n{}.",
+                    error
+                );
+                None
+            }
+        })
+        .collect();
+    Ok(confirmed_subscribers)
 }
