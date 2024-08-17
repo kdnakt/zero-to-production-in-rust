@@ -34,6 +34,7 @@ validator = "0.18.1"
 rand = { version = "0.8.5", features = ["std_rng"] }
 thiserror = "1.0.62"
 anyhow = "1.0.86"
+base64 = "0.22.1"
 
 [dependencies.sqlx]
 version = "0.7"
