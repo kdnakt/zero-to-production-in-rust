@@ -9,8 +9,8 @@ use anyhow::Context;
 use base64::prelude::*;
 use secrecy::ExposeSecret;
 use secrecy::Secret;
-use sqlx::PgPool;
 use sha3::Digest;
+use sqlx::PgPool;
 
 use crate::{domain::SubscriberEmail, email_client::EmailClient};
 
@@ -147,9 +147,7 @@ async fn validate_credentials(
     pool: &PgPool,
 ) -> Result<uuid::Uuid, PublishError> {
     let mut hasher = sha3::Sha3_256::new();
-    hasher.update(
-        credentials.password.expose_secret().as_bytes()
-    );
+    hasher.update(credentials.password.expose_secret().as_bytes());
     let password_hash = format!("{:x}", hasher.finalize());
     let user_id: Option<_> = sqlx::query!(
         r#"
