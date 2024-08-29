@@ -31,6 +31,7 @@ pub struct TestApp {
     pub port: u16,
     pub db_pool: PgPool,
     pub email_server: MockServer,
+    test_user: TestUser,
 }
 
 impl TestApp {
@@ -114,24 +115,13 @@ pub async fn spawn_app() -> TestApp {
         port: app_port,
         db_pool: get_connection_pool(&configuration.database),
         email_server,
+        test_user: TestUser::generate(),
     };
 
-    add_test_user(&test_app.db_pool).await;
+    //add_test_user(&test_app.db_pool).await;
+    test_app.test_user.store(&test_app.db_pool).await;
 
     test_app
-}
-
-async fn add_test_user(pool: &PgPool) {
-    sqlx::query!(
-        "INSERT INTO users (user_id, username, password_hash)
-        VALUES ($1, $2, $3)",
-        Uuid::new_v4(),
-        Uuid::new_v4().to_string(),
-        Uuid::new_v4().to_string(),
-    )
-    .execute(pool)
-    .await
-    .expect("Failed to create test users.");
 }
 
 async fn configure_database(config: &DatabaseSettings) -> PgPool {
