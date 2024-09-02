@@ -174,15 +174,25 @@ async fn validate_credentials(
             )))
         }
     };
-    let mut password_hash = [0u8; 32];
+    let mut password_hash = Vec::new();
     hasher
-        .hash_password_into(credentials.password.expose_secret().as_bytes(), salt.as_bytes(), password_hash)
+        .hash_password_into(
+            credentials.password.expose_secret().as_bytes(),
+            salt.as_bytes(),
+            &mut password_hash,
+        )
         .context("Failed to hash password")
         .map_err(PublishError::UnexpectedError)?;
-    let password_hash = format!("{:x}", password_hash);
+    let password_hash = password_hash
+        .iter()
+        .map(|byte| format!("{:x}", byte))
+        .collect::<Vec<String>>()
+        .join("");
 
     if password_hash != expected_password_hash {
-        Err(PublishError::AuthError(anyhow::anyhow!("Invalid password.")))
+        Err(PublishError::AuthError(anyhow::anyhow!(
+            "Invalid password."
+        )))
     } else {
         Ok(user_id)
     }
