@@ -154,27 +154,38 @@ async fn validate_credentials(
             .context("Failed to build Argon2 parameters")
             .map_err(PublishError::UnexpectedError)?,
     );
-    let mut hasher = sha3::Sha3_256::new();
-    hasher.update(credentials.password.expose_secret().as_bytes());
-    let password_hash = format!("{:x}", hasher.finalize());
-    let user_id: Option<_> = sqlx::query!(
+    let row: Option<_> = sqlx::query!(
         r#"
-        SELECT user_id
+        SELECT user_id, password_hash, salt
         FROM users
-        WHERE username = $1 AND password_hash = $2
+        WHERE username = $1
         "#,
         credentials.username,
-        password_hash
     )
     .fetch_optional(pool)
     .await
-    .context("Failed to perform a query to validate auth credentials.")
+    .context("Failed to perform a query to retrieve stored credentials.")
     .map_err(PublishError::UnexpectedError)?;
+    let (expected_password_hash, user_id, salt) = match row {
+        Some(row) => (row.password_hash, row.user_id, row.salt),
+        None => {
+            return Err(PublishError::AuthError(anyhow::anyhow!(
+                "Unknown username."
+            )))
+        }
+    };
+    let mut password_hash = [0u8; 32];
+    hasher
+        .hash_password_into(credentials.password.expose_secret().as_bytes(), salt.as_bytes(), password_hash)
+        .context("Failed to hash password")
+        .map_err(PublishError::UnexpectedError)?;
+    let password_hash = format!("{:x}", password_hash);
 
-    user_id
-        .map(|row| row.user_id)
-        .ok_or_else(|| anyhow::anyhow!("Invalid username or password."))
-        .map_err(PublishError::AuthError)
+    if password_hash != expected_password_hash {
+        Err(PublishError::AuthError(anyhow::anyhow!("Invalid password.")))
+    } else {
+        Ok(user_id)
+    }
 }
 
 #[tracing::instrument(name = "Get confirmed subscribers", skip(pool))]
