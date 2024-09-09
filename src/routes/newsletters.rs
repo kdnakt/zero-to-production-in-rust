@@ -12,7 +12,9 @@ use secrecy::ExposeSecret;
 use secrecy::Secret;
 use sqlx::PgPool;
 
-use crate::{domain::SubscriberEmail, email_client::EmailClient, telemetry::spawn_blocking_with_tracing};
+use crate::{
+    domain::SubscriberEmail, email_client::EmailClient, telemetry::spawn_blocking_with_tracing,
+};
 
 use super::error_chain_fmt;
 
