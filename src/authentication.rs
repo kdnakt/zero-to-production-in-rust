@@ -1,7 +1,7 @@
 #[derive(thiserror::Error, Debug)]
-pub enum PublishError {
-    #[error("Authentication failed.")]
-    AuthError(#[source] anyhow::Error),
+pub enum AuthError {
+    #[error("Invalid credentials.")]
+    InvalidCredentials(#[source] anyhow::Error),
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
