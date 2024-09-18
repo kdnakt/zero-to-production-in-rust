@@ -13,7 +13,9 @@ use secrecy::Secret;
 use sqlx::PgPool;
 
 use crate::{
-    authentication::AuthError, domain::SubscriberEmail, email_client::EmailClient,
+    authentication::{AuthError, Credentials},
+    domain::SubscriberEmail,
+    email_client::EmailClient,
     telemetry::spawn_blocking_with_tracing,
 };
 
@@ -110,11 +112,6 @@ pub async fn publish_newsletter(
         }
     }
     Ok(HttpResponse::Ok().finish())
-}
-
-struct Credentials {
-    username: String,
-    password: Secret<String>,
 }
 
 fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {
