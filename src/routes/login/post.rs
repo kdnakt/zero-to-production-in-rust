@@ -1,5 +1,8 @@
 use actix_web::{
-    http::{header::LOCATION, StatusCode},
+    http::{
+        header::{ContentType, LOCATION},
+        StatusCode,
+    },
     web, HttpResponse, ResponseError,
 };
 use secrecy::Secret;
@@ -36,6 +39,41 @@ impl ResponseError for LoginError {
             LoginError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             LoginError::AuthError(_) => StatusCode::UNAUTHORIZED,
         }
+    }
+
+    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
+        HttpResponse::build(self.status_code())
+            .content_type(ContentType::html())
+            .body(format!(
+                r#"<!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta http-equiv="content-type" content="text/html; charset=utf-8">
+                <title>Login</title>
+            </head>
+            <body>
+                <p><i>{}</i></p>
+                <form action="/login" method="post">
+                    <label>Username
+                        <input
+                            type="text"
+                            placeholder="Enter Username"
+                            name="username"
+                        >
+                    </label>
+                    <label>Password
+                        <input
+                            type="password"
+                            placeholder="Enter Password"
+                            name="password"
+                        >
+                    </label>
+                    <button type="submit">Login</button>
+                </form>
+            </body>
+            </html>"#,
+                self
+            ))
     }
 }
 
