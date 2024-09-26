@@ -1,8 +1,5 @@
 use actix_web::{
-    http::{
-        header::LOCATION,
-        StatusCode,
-    },
+    http::{header::LOCATION, StatusCode},
     web, HttpResponse, ResponseError,
 };
 use secrecy::Secret;

@@ -6,9 +6,7 @@ use actix_web::{
     web, HttpRequest, HttpResponse, ResponseError,
 };
 use anyhow::Context;
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use base64::prelude::*;
-use secrecy::ExposeSecret;
 use secrecy::Secret;
 use sqlx::PgPool;
 
@@ -16,7 +14,6 @@ use crate::{
     authentication::{validate_credentials, AuthError, Credentials},
     domain::SubscriberEmail,
     email_client::EmailClient,
-    telemetry::spawn_blocking_with_tracing,
 };
 
 use super::error_chain_fmt;
