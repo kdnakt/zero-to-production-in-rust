@@ -3,7 +3,10 @@ use actix_web::{http::header::ContentType, web, HttpResponse};
 pub async fn login_form(query: web::Query<QueryParams>) -> HttpResponse {
     let error_html = match query.0.error {
         None => "".into(),
-        Some(error_message) => format!("<p><i>{error_message}</i></p>"),
+        Some(error_message) => format!(
+            "<p><i>{}</i></p>",
+            htmlescape::encode_minimal(&error_message)
+        ),
     };
     HttpResponse::Ok()
         .content_type(ContentType::html())
