@@ -16,6 +16,9 @@ pub struct Application {
     server: Server,
 }
 
+#[derive(Clone)]
+pub struct HmacSecret(pub Secret<String>);
+
 #[derive(Debug)]
 pub struct ApplicationBaseUrl(pub String);
 
@@ -43,7 +46,7 @@ pub fn run(
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
-            .app_data(hmac_secret.clone())
+            .app_data(HmacSecret(hmac_secret.clone()))
     })
     .listen(listener)?
     .run();
