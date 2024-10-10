@@ -1,4 +1,4 @@
-use actix_web::{dev::Server, web, App, HttpServer};
+use actix_web::{dev::Server, web::{self, Data}, App, HttpServer};
 use secrecy::Secret;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
@@ -46,7 +46,7 @@ pub fn run(
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
-            .app_data(HmacSecret(hmac_secret.clone()))
+            .app_data(Data::new(HmacSecret(hmac_secret.clone())))
     })
     .listen(listener)?
     .run();

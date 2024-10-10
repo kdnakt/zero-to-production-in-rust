@@ -13,6 +13,7 @@ pub enum AuthError {
     UnexpectedError(#[from] anyhow::Error),
 }
 
+#[derive(Debug)]
 pub struct Credentials {
     pub username: String,
     pub password: Secret<String>,
