@@ -125,8 +125,11 @@ pub async fn spawn_app() -> TestApp {
     let app_port = application.port();
     let _ = tokio::spawn(application.run_until_stopped());
 
-    let client = reqwest::Client::builder().redirect(reqwest::redirect::Policy::none())
-    .cookie_store(true).build().unwrap();
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .cookie_store(true)
+        .build()
+        .unwrap();
     let test_app = TestApp {
         address: format!("http://127.0.0.1:{}", app_port),
         port: app_port,
