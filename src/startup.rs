@@ -1,3 +1,4 @@
+use actix_session::SessionMiddleware;
 use actix_web::{
     cookie::Key,
     dev::Server,
@@ -38,13 +39,15 @@ pub fn run(
     let db_pool = web::Data::new(db_pool);
     let email_client = web::Data::new(email_client);
     let base_url = web::Data::new(ApplicationBaseUrl(base_url));
+    let secret_key = Key::from(hmac_secret.expose_secret().as_bytes());
     let message_store =
-        CookieMessageStore::builder(Key::from(hmac_secret.expose_secret().as_bytes())).build();
+        CookieMessageStore::builder(secret_key.clone()).build();
     let message_framework = FlashMessagesFramework::builder(message_store).build();
     let server = HttpServer::new(move || {
         App::new()
             // .wrap(Logger::default())
             .wrap(message_framework.clone())
+            .wrap(SessionMiddleware::new(todo!(), secret_key.clone()))
             .wrap(TracingLogger::default())
             .route("health_check", web::get().to(health_check))
             .route("subscriptions", web::post().to(subscribe))
