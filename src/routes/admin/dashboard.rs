@@ -1,5 +1,5 @@
 use actix_session::Session;
-use actix_web::{web, HttpResponse};
+use actix_web::{http::header::ContentType, web, HttpResponse};
 use anyhow::Context;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -15,12 +15,25 @@ pub async fn admin_dashboard(
     session: Session,
     pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let _username = if let Some(user_id) = session.get::<Uuid>("user_id").map_err(e500)? {
+    let username = if let Some(user_id) = session.get::<Uuid>("user_id").map_err(e500)? {
         get_username(user_id, &pool).await.map_err(e500)?
     } else {
         todo!()
     };
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(format!(
+            r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>Admin dashboard</title>
+</head>
+<body>
+    <p>Welcome {username}!<p>
+</body>
+</html>"#
+        )))
 }
 
 #[tracing::instrument(name = "Get username", skip(pool))]
