@@ -1,5 +1,7 @@
 use actix_web::{web, HttpResponse};
-use secrecy::Secret;
+use secrecy::{ExposeSecret, Secret};
+
+use crate::utils::see_other;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -9,5 +11,8 @@ pub struct FormData {
 }
 
 pub async fn change_password(form: web::Form<FormData>) -> Result<HttpResponse, actix_web::Error> {
+    if form.new_password.expose_secret() != form.new_password_check.expose_secret() {
+        return Ok(see_other("/admin/password"));
+    }
     todo!()
 }
