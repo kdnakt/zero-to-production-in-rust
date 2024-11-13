@@ -19,8 +19,8 @@ pub struct FormData {
 
 pub async fn change_password(
     form: web::Form<FormData>,
-    session: web::Data<TypedSession>,
     pool: web::Data<PgPool>,
+    session: TypedSession,
 ) -> Result<HttpResponse, actix_web::Error> {
     let user_id = session.get_user_id().map_err(e500)?;
     if user_id.is_none() {
