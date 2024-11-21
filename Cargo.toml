@@ -46,6 +46,7 @@ actix-web-flash-messages = { version = "0.5.0", features = ["cookies"] }
 actix-session = { version = "0.10.1", features = ["redis-session", "redis-session-rustls"] }
 redis = "0.27.5"
 serde_json = "1.0.117"
+actix-web-lab = "0.23.0"
 
 [dependencies.sqlx]
 version = "0.7"
