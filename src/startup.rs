@@ -19,7 +19,7 @@ use crate::{
     email_client::EmailClient,
     routes::{
         admin_dashboard, change_password, change_password_form, confirm, health_check, home,
-        log_out, login, login_form, publish_newsletter, subscribe,
+        issue_newsletter_form, log_out, login, login_form, publish_newsletter, subscribe,
     },
 };
 
@@ -71,6 +71,7 @@ pub async fn run(
                     .route("/dashboard", web::get().to(admin_dashboard))
                     .route("/password", web::get().to(change_password_form))
                     .route("/password", web::post().to(change_password))
+                    .route("/newsletters", web::get().to(issue_newsletter_form))
                     .route("logout", web::post().to(log_out)),
             )
             .app_data(db_pool.clone())
