@@ -201,7 +201,7 @@ async fn invalid_password_is_rejected() {
 async fn newsletter_creation_is_idempotent() {
     let app = spawn_app().await;
     create_confirmed_subscriber(&app).await;
-    // TODO: login
+    app.test_user.login(&app).await;
 
     Mock::given(path("/email"))
         .and(method("POST"))
@@ -222,7 +222,6 @@ async fn newsletter_creation_is_idempotent() {
     assert_is_redirect_to(&response, "/admin/newsletters");
 
     let html_page = app.get_newsletters_html().await;
-    println!("[DEBUG] {html_page} [DEBUG]");
     assert!(html_page.contains("<p><i>The newsletter issue has been published!</i></p>"));
 
 }
