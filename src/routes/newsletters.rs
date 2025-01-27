@@ -5,6 +5,7 @@ use actix_web::{
     },
     web, HttpRequest, HttpResponse, ResponseError,
 };
+use actix_web_flash_messages::FlashMessage;
 use anyhow::Context;
 use base64::prelude::*;
 use secrecy::Secret;
@@ -13,7 +14,7 @@ use sqlx::PgPool;
 use crate::{
     authentication::{validate_credentials, AuthError, Credentials},
     domain::SubscriberEmail,
-    email_client::EmailClient,
+    email_client::EmailClient, utils::see_other,
 };
 
 use super::error_chain_fmt;
@@ -108,7 +109,8 @@ pub async fn publish_newsletter(
             }
         }
     }
-    Ok(HttpResponse::Ok().finish())
+    FlashMessage::info("The newsletter issue has been published!").send();
+    Ok(see_other("/admin/newsletters"))
 }
 
 fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {

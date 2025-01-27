@@ -68,6 +68,18 @@ impl TestApp {
         ConfirmationLinks { html, plain_text }
     }
 
+    pub async fn get_newsletters_html(&self) -> String {
+        self.api_client
+            .get(&format!("{}/admin/newsletters", &self.address))
+            // .basic_auth(&self.test_user.username, Some(&self.test_user.password))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .text()
+            .await
+            .unwrap()
+    }
+
     pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
         self.api_client
             .post(&format!("{}/newsletters", &self.address))
