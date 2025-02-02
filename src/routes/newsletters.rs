@@ -23,6 +23,7 @@ use super::error_chain_fmt;
 pub struct BodyData {
     title: String,
     content: Content,
+    idempotency_key: String
 }
 
 #[derive(serde::Deserialize)]
