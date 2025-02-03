@@ -14,7 +14,9 @@ use sqlx::PgPool;
 use crate::{
     authentication::{validate_credentials, AuthError, Credentials},
     domain::SubscriberEmail,
-    email_client::EmailClient, utils::see_other,
+    email_client::EmailClient,
+    idempotency::IdempotencyKey,
+    utils::{e400, see_other},
 };
 
 use super::error_chain_fmt;
@@ -23,7 +25,7 @@ use super::error_chain_fmt;
 pub struct BodyData {
     title: String,
     content: Content,
-    idempotency_key: String
+    idempotency_key: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -88,6 +90,11 @@ pub async fn publish_newsletter(
             AuthError::UnexpectedError(_) => PublishError::UnexpectedError(e.into()),
         })?;
     tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
+    let idempotency_key: IdempotencyKey = body
+        .idempotency_key
+        .clone()
+        .try_into()
+        .map_err(PublishError::UnexpectedError)?;
     let subscribers = get_confirmed_subscribers(&pool).await?;
     for subscriber in subscribers {
         match subscriber {
