@@ -22,7 +22,8 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
         "content": {
             "text": "Newsletter body as plain text",
             "html": "<p>Newsletter body as HTML</p>",
-        }
+        },
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
     });
     let response = app.post_newsletters(&newsletter_request_body).await;
     assert_is_redirect_to(&response, "/admin/newsletters");
@@ -45,7 +46,8 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
         "content": {
             "text": "Newsletter body as plain text",
             "html": "<p>Newsletter body as HTML</p>",
-        }
+        },
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
     });
     let response = app.post_newsletters(&newsletter_request_body).await;
     assert_is_redirect_to(&response, "/admin/newsletters");
@@ -60,12 +62,16 @@ async fn newsletters_returns_400_for_invalid_data() {
                 "content": {
                     "text": "Newsletter body as plain text",
                     "html": "<p>Newsletter body as HTML</p>",
-                }
+                },
+                "idempotency_key": uuid::Uuid::new_v4().to_string()
             }),
             "missing title",
         ),
         (
-            serde_json::json!({"title": "Newsletter!"}),
+            serde_json::json!({
+                "title": "Newsletter!",
+                "idempotency_key": uuid::Uuid::new_v4().to_string()
+            }),
             "missing content",
         ),
     ];
@@ -91,7 +97,8 @@ async fn requests_missing_authorization_are_rejected() {
             "content": {
                 "text": "Newsletter body as plain text",
                 "html": "<p>Newsletter body as HTML</p>",
-            }
+            },
+            "idempotency_key": uuid::Uuid::new_v4().to_string()
         }))
         .send()
         .await
@@ -154,7 +161,8 @@ async fn non_existing_user_is_rejected() {
             "content": {
                 "text": "Newsletter body as plain text",
                 "html": "<p>Newsletter body as HTML</p>",
-            }
+            },
+            "idempotency_key": uuid::Uuid::new_v4().to_string()
         }))
         .send()
         .await
@@ -182,7 +190,8 @@ async fn invalid_password_is_rejected() {
             "content": {
                 "text": "Newsletter body as plain text",
                 "html": "<p>Newsletter body as HTML</p>",
-            }
+            },
+            "idempotency_key": uuid::Uuid::new_v4().to_string()
         }))
         .send()
         .await
