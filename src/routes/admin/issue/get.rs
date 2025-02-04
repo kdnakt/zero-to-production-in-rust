@@ -12,7 +12,17 @@ pub async fn issue_newsletter_form(flash_messages: IncomingFlashMessages) -> Htt
         )
         .unwrap();
     }
+    let idempotency_key = uuid::Uuid::new_v4();
     HttpResponse::Ok()
         .content_type(ContentType::html())
-        .body(format!("{html}newsletter issue form"))
+        .body(format!(
+            r#"{html}
+            newsletter issue form
+            <form action="/admin/newsletters" method="post">
+                <input type="text" name="title" value="">
+                <input hidden type="text" name="idempotency_key" value="{idempotency_key}">
+                <button type="submit">Publish</button>
+            </form>
+            "#,
+        ))
 }
