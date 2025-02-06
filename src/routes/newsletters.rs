@@ -15,8 +15,8 @@ use crate::{
     authentication::{validate_credentials, AuthError, Credentials},
     domain::SubscriberEmail,
     email_client::EmailClient,
-    idempotency::IdempotencyKey,
-    utils::{e400, see_other},
+    idempotency::{get_saved_response, IdempotencyKey},
+    utils::see_other,
 };
 
 use super::error_chain_fmt;
@@ -95,6 +95,12 @@ pub async fn publish_newsletter(
         .clone()
         .try_into()
         .map_err(PublishError::UnexpectedError)?;
+    if let Ok(Some(saved_response)) = get_saved_response(&pool, &idempotency_key, user_id.clone())
+        .await
+        .map_err(PublishError::UnexpectedError)
+    {
+        return Ok(saved_response);
+    }
     let subscribers = get_confirmed_subscribers(&pool).await?;
     for subscriber in subscribers {
         match subscriber {
