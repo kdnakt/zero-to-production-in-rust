@@ -1,5 +1,5 @@
 use actix_web::{body::to_bytes, http::StatusCode, HttpResponse};
-use sqlx::PgPool;
+use sqlx::{postgres::PgHasArrayType, PgPool};
 use uuid::Uuid;
 
 use super::IdempotencyKey;
@@ -9,6 +9,12 @@ use super::IdempotencyKey;
 struct HeaderPairRecord {
     name: String,
     value: Vec<u8>,
+}
+
+impl PgHasArrayType for HeaderPairRecord {
+    fn array_type_info() -> sqlx::postgres::PgTypeInfo {
+        sqlx::postgres::PgTypeInfo::with_name("_header_pair")
+    }
 }
 
 pub async fn get_saved_response(
@@ -43,9 +49,9 @@ pub async fn get_saved_response(
 }
 
 pub async fn save_response(
-    _pool: &PgPool,
-    _idempotency_key: &IdempotencyKey,
-    _user_id: Uuid,
+    pool: &PgPool,
+    idempotency_key: &IdempotencyKey,
+    user_id: Uuid,
     http_response: HttpResponse,
 ) -> Result<HttpResponse, anyhow::Error> {
     let (response_head, body) = http_response.into_parts();
@@ -62,7 +68,26 @@ pub async fn save_response(
         h
     };
 
-    // TODO: SQL query
+    sqlx::query_unchecked!(
+        r#"
+        INSERT INTO idempotency (
+            user_id,
+            idempotency_key,
+            response_status_code,
+            response_headers,
+            response_body,
+            created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, now())
+    "#,
+        user_id,
+        idempotency_key.as_ref(),
+        status_code,
+        headers,
+        body.as_ref()
+    )
+    .execute(pool)
+    .await?;
 
     let http_response = response_head.set_body(body).map_into_boxed_body();
     Ok(http_response)
