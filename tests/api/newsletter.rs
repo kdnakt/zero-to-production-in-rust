@@ -263,5 +263,8 @@ async fn concurrent_from_submission_is_handled_gracefully() {
     let (response1, response2) = tokio::join!(response1, response2);
 
     assert_eq!(response1.status(), response2.status());
-    assert_eq!(response1.text().await.unwrap(), response2.text().await.unwrap());
+    assert_eq!(
+        response1.text().await.unwrap(),
+        response2.text().await.unwrap()
+    );
 }
