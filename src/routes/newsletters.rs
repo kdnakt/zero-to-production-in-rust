@@ -15,7 +15,7 @@ use crate::{
     authentication::{validate_credentials, AuthError, Credentials},
     domain::SubscriberEmail,
     email_client::EmailClient,
-    idempotency::{get_saved_response, save_response, IdempotencyKey},
+    idempotency::{get_saved_response, save_response, try_processing, IdempotencyKey, NextAction},
     utils::see_other,
 };
 
@@ -95,11 +95,15 @@ pub async fn publish_newsletter(
         .clone()
         .try_into()
         .map_err(PublishError::UnexpectedError)?;
-    if let Ok(Some(saved_response)) = get_saved_response(&pool, &idempotency_key, user_id.clone())
+    match try_processing(&pool, &idempotency_key, user_id)
         .await
-        .map_err(PublishError::UnexpectedError)
+        .map_err(PublishError::UnexpectedError)?
     {
-        return Ok(saved_response);
+        NextAction::StartProcessing => {}
+        NextAction::ReturnSavedResponse(saved_response) => {
+            success_message().send();
+            return Ok(saved_response);
+        }
     }
     let subscribers = get_confirmed_subscribers(&pool).await?;
     for subscriber in subscribers {
@@ -123,12 +127,16 @@ pub async fn publish_newsletter(
             }
         }
     }
-    FlashMessage::info("The newsletter issue has been published!").send();
+    success_message().send();
     let response = see_other("/admin/newsletters");
     let response = save_response(&pool, &idempotency_key, user_id, response)
         .await
         .map_err(PublishError::UnexpectedError)?;
     Ok(response)
+}
+
+fn success_message() -> FlashMessage {
+    FlashMessage::info("The newsletter issue has been published!")
 }
 
 fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {
