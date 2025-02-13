@@ -51,14 +51,7 @@ actix-web-lab = "0.23.0"
 [dependencies.sqlx]
 version = "0.7"
 default-features = false
-features = [
-    "runtime-tokio-rustls",
-    "macros",
-    "postgres",
-    "uuid",
-    "chrono",
-    "migrate"
-]
+features = ["runtime-tokio-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "runtime-tokio"]
 # offline mode is always enabled in v0.7
 
 [dev-dependencies]
