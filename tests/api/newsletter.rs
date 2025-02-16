@@ -1,5 +1,9 @@
 use std::time::Duration;
 
+use fake::{
+    faker::{internet::en::SafeEmail, name::en::Name},
+    Fake,
+};
 use uuid::Uuid;
 use wiremock::{
     matchers::{any, method, path},
@@ -114,7 +118,13 @@ async fn requests_missing_authorization_are_rejected() {
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
-    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
+    let name: String = Name().fake();
+    let email: String = SafeEmail().fake();
+    let body = serde_urlencoded::to_string(&serde_json::json!({
+        "name": name,
+        "email": email
+    }))
+    .unwrap();
 
     let _mock_guard = Mock::given(path("/email"))
         .and(method("POST"))
@@ -267,4 +277,48 @@ async fn concurrent_from_submission_is_handled_gracefully() {
         response1.text().await.unwrap(),
         response2.text().await.unwrap()
     );
+}
+
+#[tokio::test]
+async fn transient_errors_do_not_cause_duplicate_deliveries_on_retries() {
+    let app = spawn_app().await;
+    let newsletter_request_body = serde_json::json!({
+        "title": "Newsletter title",
+        "content": {
+            "text": "Newsletter body as plain text",
+            "html": "<p>Newsletter body as HTML</p>",
+        },
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+    create_confirmed_subscriber(&app).await;
+    create_confirmed_subscriber(&app).await;
+    app.test_user.login(&app).await;
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(500))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    let response = app.post_newsletters(&newsletter_request_body).await;
+    assert_eq!(response.status().as_u16(), 500);
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .named("Delivery retry")
+        .mount(&app.email_server)
+        .await;
+    let response = app.post_newsletters(&newsletter_request_body).await;
+    assert_eq!(response.status().as_u16(), 303);
 }
