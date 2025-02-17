@@ -15,7 +15,7 @@ use crate::{
     authentication::{validate_credentials, AuthError, Credentials},
     domain::SubscriberEmail,
     email_client::EmailClient,
-    idempotency::{get_saved_response, save_response, try_processing, IdempotencyKey, NextAction},
+    idempotency::{save_response, try_processing, IdempotencyKey, NextAction},
     utils::see_other,
 };
 
