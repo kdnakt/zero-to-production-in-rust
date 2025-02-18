@@ -223,3 +223,25 @@ async fn insert_newsletter_issue(
     .await?;
     Ok(issue_id)
 }
+
+#[tracing::instrument(skip_all)]
+async fn enqueue_delivery_tasks(
+    mut transaction: Transaction<'_, Postgres>,
+    newsletter_issue_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO issue_delivery_queue (
+            newsletter_issue_id,
+            subscriber_email
+        )
+        SELECT $1, email
+        FROM subscriptions
+        WHERE status = 'confirmed'
+        "#,
+        newsletter_issue_id,
+    )
+    .execute(&mut *transaction)
+    .await?;
+    Ok(())
+}
