@@ -96,7 +96,7 @@ pub async fn publish_newsletter(
         .clone()
         .try_into()
         .map_err(PublishError::UnexpectedError)?;
-    let transaction = match try_processing(&pool, &idempotency_key, user_id)
+    let mut transaction = match try_processing(&pool, &idempotency_key, user_id)
         .await
         .map_err(PublishError::UnexpectedError)?
     {
@@ -106,6 +106,19 @@ pub async fn publish_newsletter(
             return Ok(saved_response);
         }
     };
+    let issue_id = insert_newsletter_issue(
+        &mut transaction,
+        &body.title,
+        &body.content.text,
+        &body.content.html,
+    )
+    .await
+    .context("Failed to store newsletter issue details")
+    .map_err(PublishError::UnexpectedError)?;
+    enqueue_delivery_tasks(&mut transaction, issue_id)
+        .await
+        .context("Failed to enqueue delivery tasks")
+        .map_err(PublishError::UnexpectedError)?;
     let subscribers = get_confirmed_subscribers(&pool).await?;
     for subscriber in subscribers {
         match subscriber {
@@ -130,9 +143,13 @@ pub async fn publish_newsletter(
     }
     success_message().send();
     let response = see_other("/admin/newsletters");
-    let response = save_response(transaction, &idempotency_key, user_id, response)
+    let response = save_response(&mut transaction, &idempotency_key, user_id, response)
         .await
         .map_err(PublishError::UnexpectedError)?;
+    transaction
+        .commit()
+        .await
+        .map_err(|e| PublishError::UnexpectedError(e.into()))?;
     Ok(response)
 }
 
@@ -197,7 +214,7 @@ async fn get_confirmed_subscribers(
 
 #[tracing::instrument(skip_all)]
 async fn insert_newsletter_issue(
-    mut transaction: Transaction<'_, Postgres>,
+    transaction: &mut Transaction<'_, Postgres>,
     title: &str,
     text_content: &str,
     html_content: &str,
@@ -219,14 +236,14 @@ async fn insert_newsletter_issue(
         text_content,
         html_content
     )
-    .execute(&mut *transaction)
+    .execute(&mut **transaction)
     .await?;
     Ok(issue_id)
 }
 
 #[tracing::instrument(skip_all)]
 async fn enqueue_delivery_tasks(
-    mut transaction: Transaction<'_, Postgres>,
+    transaction: &mut Transaction<'_, Postgres>,
     newsletter_issue_id: Uuid,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
@@ -241,7 +258,7 @@ async fn enqueue_delivery_tasks(
         "#,
         newsletter_issue_id,
     )
-    .execute(&mut *transaction)
+    .execute(&mut **transaction)
     .await?;
     Ok(())
 }

@@ -49,7 +49,7 @@ pub async fn get_saved_response(
 }
 
 pub async fn save_response(
-    mut transaction: Transaction<'static, Postgres>,
+    transaction: &mut Transaction<'static, Postgres>,
     idempotency_key: &IdempotencyKey,
     user_id: Uuid,
     http_response: HttpResponse,
@@ -85,10 +85,8 @@ pub async fn save_response(
         headers,
         body.as_ref()
     )
-    .execute(&mut *transaction)
+    .execute(&mut **transaction)
     .await?;
-    transaction.commit().await?;
-
     let http_response = response_head.set_body(body).map_into_boxed_body();
     Ok(http_response)
 }
