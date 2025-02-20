@@ -14,7 +14,6 @@ use uuid::Uuid;
 
 use crate::{
     authentication::{validate_credentials, AuthError, Credentials},
-    email_client::EmailClient,
     idempotency::{save_response, try_processing, IdempotencyKey, NextAction},
     utils::see_other,
 };
@@ -68,13 +67,12 @@ impl ResponseError for PublishError {
 
 #[tracing::instrument(
     name = "Publish a newsletter issue",
-    skip(body, pool, email_client, request),
+    skip(body, pool, request),
     fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
 pub async fn publish_newsletter(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    email_client: web::Data<EmailClient>,
     request: HttpRequest,
 ) -> Result<HttpResponse, PublishError> {
     let credentials = basic_authentication(request.headers()).map_err(PublishError::AuthError)?;
