@@ -1,4 +1,4 @@
-use sqlx::{pool, PgPool, Transaction};
+use sqlx::{PgPool, Transaction};
 use tracing::{field::display, Span};
 use uuid::Uuid;
 
