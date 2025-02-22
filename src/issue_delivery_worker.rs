@@ -44,6 +44,7 @@ async fn dequeue_task(
     }
 }
 
+#[tracing::instrument(skip_all)]
 async fn delete_task(
     mut transaction: PgTransaction,
     issue_id: Uuid,
