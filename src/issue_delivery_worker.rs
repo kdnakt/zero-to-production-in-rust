@@ -11,6 +11,7 @@ async fn try_execute_task(pool: &PgPool, email_client: &EmailClient) -> Result<(
         Span::current()
             .record("newsletter_issue_id", &display(issue_id))
             .record("subscriber_email", &display(&email));
+        // TODO: send email
         delete_task(transaction, issue_id, &email).await?;
     }
     Ok(())
