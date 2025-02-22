@@ -4,6 +4,12 @@ use uuid::Uuid;
 
 use crate::email_client::EmailClient;
 
+struct NewsletterIssue {
+    title: String,
+    text_content: String,
+    html_content: String,
+}
+
 #[tracing::instrument(skip_all, fields(newsletter_issue_id=tracing::field::Empty,
     subscriber_email=tracing::field::Empty),err)]
 async fn try_execute_task(pool: &PgPool, email_client: &EmailClient) -> Result<(), anyhow::Error> {
@@ -63,4 +69,20 @@ async fn delete_task(
     .await?;
     transaction.commit().await?;
     Ok(())
+}
+
+#[tracing::instrument(skip_all)]
+async fn get_issue(pool: &PgPool, issue_id: Uuid) -> Result<NewsletterIssue, anyhow::Error> {
+    let issue = sqlx::query_as!(
+        NewsletterIssue,
+        r#"
+        SELECT title, text_content, html_content
+        FROM newsletter_issues
+        WHERE newsletter_issue_id = $1
+        "#,
+        issue_id,
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(issue)
 }
