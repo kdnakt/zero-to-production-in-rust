@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use sqlx::{PgPool, Transaction};
 use tracing::{field::display, Span};
 use uuid::Uuid;
@@ -8,6 +10,14 @@ struct NewsletterIssue {
     title: String,
     text_content: String,
     html_content: String,
+}
+
+async fn worker_loop(pool: PgPool, email_client: EmailClient) -> Result<(), anyhow::Error> {
+    loop {
+        if try_execute_task(&pool, &email_client).await.is_err() {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+    }
 }
 
 #[tracing::instrument(skip_all, fields(newsletter_issue_id=tracing::field::Empty,
