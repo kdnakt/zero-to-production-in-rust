@@ -19,8 +19,14 @@ enum ExecutionOutcome {
 
 async fn worker_loop(pool: PgPool, email_client: EmailClient) -> Result<(), anyhow::Error> {
     loop {
-        if try_execute_task(&pool, &email_client).await.is_err() {
-            tokio::time::sleep(Duration::from_secs(1)).await;
+        match try_execute_task(&pool, &email_client).await {
+            Ok(ExecutionOutcome::EmptyQueue) => {
+                tokio::time::sleep(Duration::from_secs(10)).await;
+            }
+            Err(_) => {
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+            Ok(ExecutionOutcome::TaskCompleted) => {}
         }
     }
 }
