@@ -1,3 +1,6 @@
+use std::fmt::{Debug, Display};
+use tokio::task::JoinError;
+
 use zero2prod::{
     configuration::get_configuration,
     issue_delivery_worker::run_worker_until_stopped,
@@ -17,9 +20,33 @@ async fn main() -> anyhow::Result<()> {
 
     // make progress concurrently
     tokio::select! {
-        _ = app_task => {},
-        _ = worker_task => {},
+        o = app_task => report_exit("API", o),
+        o = worker_task => report_exit("Background worker", o),
     };
 
     Ok(())
+}
+
+fn report_exit(task_name: &str, outcome: Result<Result<(), impl Debug + Display>, JoinError>) {
+    match outcome {
+        Ok(Ok(())) => {
+            tracing::info!("{} has exited", task_name)
+        }
+        Ok(Err(e)) => {
+            tracing::error!(
+                error.cause_chain = ?e,
+                error.message = %e,
+                "{} failed",
+                task_name
+            )
+        }
+        Err(e) => {
+            tracing::error!(
+                error.cause_chain = ?e,
+                error.message = %e,
+                "{} task failed to complete",
+                task_name
+            )
+        }
+    }
 }
