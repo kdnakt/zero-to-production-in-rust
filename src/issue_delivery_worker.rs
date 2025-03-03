@@ -22,7 +22,7 @@ struct NewsletterIssue {
     html_content: String,
 }
 
-enum ExecutionOutcome {
+pub enum ExecutionOutcome {
     TaskCompleted,
     EmptyQueue,
 }
@@ -43,7 +43,7 @@ async fn worker_loop(pool: PgPool, email_client: EmailClient) -> Result<(), anyh
 
 #[tracing::instrument(skip_all, fields(newsletter_issue_id=tracing::field::Empty,
     subscriber_email=tracing::field::Empty),err)]
-async fn try_execute_task(
+pub async fn try_execute_task(
     pool: &PgPool,
     email_client: &EmailClient,
 ) -> Result<ExecutionOutcome, anyhow::Error> {
